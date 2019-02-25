@@ -8,6 +8,10 @@ const todo = props => {
   // const [todoState, setTodoState] = useState({ userInput: "", todoList: [] });
 
   // useEffect runs after each render cycle
+  // useEffect second parameter is checked to know if the function would be executed, it's executed only if the array of second parameter changes
+  // [] empty string is like execute the function on componentDidMount
+  // no second argument, the function will run every render cycle
+  // [todoname] in second argument, the function will run every time variable changes
   useEffect(() => {
     axios
       .get("https://reacthooks-aec8d.firebaseio.com/todos.json")
@@ -19,7 +23,25 @@ const todo = props => {
           todos.push({ id: key, name: todoData[key].name });
         }
         setTodoList(todos);
+        // with the return below, the function inside will be executed before the useEffect function
+        return () => {
+          console.log("Cleanup");
+        };
       });
+  }, []);
+
+  const mouseMoveHandler = event => {
+    console.log(event.clientX, event.clientY);
+  };
+
+  useEffect(() => {
+    document.addEventListener("mousemove", mouseMoveHandler);
+    // event cleanup, is executed before useEffect function
+    return () => {
+      document.removeEventListener("mousemove", mouseMoveHandler);
+    };
+    // with [] as second argument, the useEffect function will be executed as componentDidMount event
+    // with [] as second argument, the return function will be executed as componentDidUnmout event
   }, []);
 
   const inputChangeHandler = event => {
