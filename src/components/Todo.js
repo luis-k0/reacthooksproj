@@ -1,11 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useReducer } from "react";
 import axios from "axios";
 
 const todo = props => {
   // useState returns an array, position 0 is the state, position 1 is the function to update the state
   const [todoName, setTodoName] = useState(""); // array destructuring
-  const [todoList, setTodoList] = useState([]);
+  const [submittedTodo, setSubmittedTodo] = useState(null);
+  // const [todoList, setTodoList] = useState([]); // commented to useReducer
   // const [todoState, setTodoState] = useState({ userInput: "", todoList: [] });
+
+  const todoListReducer = (state, action) => {
+    switch (action.type) {
+      case "ADD":
+        return state.concat(action.payload);
+      case "SET":
+        return action.payload;
+      case "REMOVE":
+        return state.filter(todo => todo.id !== action.payload);
+      default:
+        return state;
+    }
+  };
+
+  const [todoList, dispatch] = useReducer(todoListReducer, []);
 
   // useEffect runs after each render cycle
   // useEffect second parameter is checked to know if the function would be executed, it's executed only if the array of second parameter changes
@@ -22,12 +38,13 @@ const todo = props => {
         for (const key in todoData) {
           todos.push({ id: key, name: todoData[key].name });
         }
-        setTodoList(todos);
-        // with the return below, the function inside will be executed before the useEffect function
-        return () => {
-          console.log("Cleanup");
-        };
+        // setTodoList(todos);
+        dispatch({ type: "SET", payload: todos });
       });
+    // with the return below, the function inside will be executed before the useEffect function
+    return () => {
+      console.log("axios cleanup");
+    };
   }, []);
 
   const mouseMoveHandler = event => {
@@ -38,11 +55,21 @@ const todo = props => {
     document.addEventListener("mousemove", mouseMoveHandler);
     // event cleanup, is executed before useEffect function
     return () => {
+      console.log("mousemove cleanup");
       document.removeEventListener("mousemove", mouseMoveHandler);
     };
     // with [] as second argument, the useEffect function will be executed as componentDidMount event
     // with [] as second argument, the return function will be executed as componentDidUnmout event
   }, []);
+
+  useEffect(() => {
+    if (submittedTodo) {
+      // only if isn't the first time render
+      // setTodoList(todoList.concat(submittedTodo));
+      dispatch({ type: "ADD", payload: submittedTodo });
+    }
+    // runs only if submittedTodo changes
+  }, [submittedTodo]);
 
   const inputChangeHandler = event => {
     // console.log(todoName);
@@ -54,7 +81,7 @@ const todo = props => {
   };
 
   const todoAddHandler = () => {
-    setTodoList(todoList.concat(todoName)); // concat returns a new array // with saparated useState
+    // setTodoList(todoList.concat(todoName)); // concat returns a new array // with saparated useState
     // setTodoState({
     //   userInput: todoState.userInput,
     //   todoList: todoState.todoList.concat(todoState.userInput)
@@ -64,7 +91,13 @@ const todo = props => {
         name: todoName
       })
       .then(res => {
-        console.log(res);
+        // setTimeout only to simulate response delay from server
+        setTimeout(() => {
+          // console.log(res);
+          const todoItem = { id: res.data.name, name: todoName };
+          // setTodoList(todoList.concat(todoItem)); // changed by setSubmittedTodo below
+          setSubmittedTodo(todoItem);
+        }, 3000);
       })
       .catch(err => {
         console.log(err);
