@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useReducer } from "react";
+import React, { useEffect, useReducer, useRef } from "react"; // useState removed to test useRef
 import axios from "axios";
 
 const todo = props => {
   // useState returns an array, position 0 is the state, position 1 is the function to update the state
-  const [todoName, setTodoName] = useState(""); // array destructuring
-  const [submittedTodo, setSubmittedTodo] = useState(null);
+  // const [todoName, setTodoName] = useState(""); // array destructuring // commented to test useRef
+  // const [submittedTodo, setSubmittedTodo] = useState(null);
   // const [todoList, setTodoList] = useState([]); // commented to useReducer
   // const [todoState, setTodoState] = useState({ userInput: "", todoList: [] });
+  const todoInputRef = useRef();
 
   const todoListReducer = (state, action) => {
     switch (action.type) {
@@ -47,38 +48,39 @@ const todo = props => {
     };
   }, []);
 
-  const mouseMoveHandler = event => {
-    console.log(event.clientX, event.clientY);
-  };
+  // const mouseMoveHandler = event => {
+  //   console.log(event.clientX, event.clientY);
+  // };
 
-  useEffect(() => {
-    document.addEventListener("mousemove", mouseMoveHandler);
-    // event cleanup, is executed before useEffect function
-    return () => {
-      console.log("mousemove cleanup");
-      document.removeEventListener("mousemove", mouseMoveHandler);
-    };
-    // with [] as second argument, the useEffect function will be executed as componentDidMount event
-    // with [] as second argument, the return function will be executed as componentDidUnmout event
-  }, []);
+  // useEffect(() => {
+  //   document.addEventListener("mousemove", mouseMoveHandler);
+  //   // event cleanup, is executed before useEffect function
+  //   return () => {
+  //     console.log("mousemove cleanup");
+  //     document.removeEventListener("mousemove", mouseMoveHandler);
+  //   };
+  //   // with [] as second argument, the useEffect function will be executed as componentDidMount event
+  //   // with [] as second argument, the return function will be executed as componentDidUnmout event
+  // }, []);
 
-  useEffect(() => {
-    if (submittedTodo) {
-      // only if isn't the first time render
-      // setTodoList(todoList.concat(submittedTodo));
-      dispatch({ type: "ADD", payload: submittedTodo });
-    }
-    // runs only if submittedTodo changes
-  }, [submittedTodo]);
+  // useEffect(() => {
+  //   if (submittedTodo) {
+  //     // only if isn't the first time render
+  //     // setTodoList(todoList.concat(submittedTodo));
+  //     dispatch({ type: "ADD", payload: submittedTodo });
+  //   }
+  //   // runs only if submittedTodo changes
+  // }, [submittedTodo]);
 
-  const inputChangeHandler = event => {
-    // console.log(todoName);
-    setTodoName(event.target.value); // with separated useState
-    // setTodoState({
-    //   userInput: event.target.value,
-    //   todoList: todoState.todoList
-    // });
-  };
+  // commented do test useRef
+  // const inputChangeHandler = event => {
+  //   // console.log(todoName);
+  //   setTodoName(event.target.value); // with separated useState
+  //   // setTodoState({
+  //   //   userInput: event.target.value,
+  //   //   todoList: todoState.todoList
+  //   // });
+  // };
 
   const todoAddHandler = () => {
     // setTodoList(todoList.concat(todoName)); // concat returns a new array // with saparated useState
@@ -86,6 +88,11 @@ const todo = props => {
     //   userInput: todoState.userInput,
     //   todoList: todoState.todoList.concat(todoState.userInput)
     // });
+
+    // todoInputRef created with useRef
+    // current have the referento html element
+    const todoName = todoInputRef.current.value;
+
     axios
       .post("https://reacthooks-aec8d.firebaseio.com/todos.json", {
         name: todoName
@@ -96,8 +103,26 @@ const todo = props => {
           // console.log(res);
           const todoItem = { id: res.data.name, name: todoName };
           // setTodoList(todoList.concat(todoItem)); // changed by setSubmittedTodo below
-          setSubmittedTodo(todoItem);
+          // setSubmittedTodo(todoItem); // changed by the dispatch below
+          // dispatch always have the latest state, then we don't have the problem of synchronism like setTodoList
+          dispatch({ type: "ADD", payload: todoItem });
         }, 3000);
+      })
+      .catch(err => {
+        console.log(err);
+      });
+  };
+
+  const todoRemoveHandler = todoId => {
+    axios
+      .delete(
+        "https://reacthooks-aec8d.firebaseio.com/todos/" + todoId + ".json"
+      )
+      // .delete(`https://reacthooks-aec8d.firebaseio.com/todos/${todoId}.json`)
+      // .delete(`https://reacthooks-aec8d.firebaseio.com/todos.json`, todoId) // delete all todos, not working
+      .then(res => {
+        console.log(todoId);
+        dispatch({ type: "REMOVE", payload: todoId });
       })
       .catch(err => {
         console.log(err);
@@ -109,8 +134,9 @@ const todo = props => {
       <input
         type="text"
         placeholder="Todo"
-        onChange={inputChangeHandler}
-        value={todoName} //value={todoState.userInput} //
+        // onChange={inputChangeHandler}
+        // value={todoName} //value={todoState.userInput} //
+        ref={todoInputRef}
       />
       <button type="button" onClick={todoAddHandler}>
         Add
@@ -118,7 +144,10 @@ const todo = props => {
       <ul>
         {/* {todoState.todoList.map(todo => ( */}
         {todoList.map(todo => (
-          <li key={todo.id}>{todo.name}</li>
+          // <li key={todo.id} onClick={todoRemoveHandler.bind(this, todo.id)}>
+          <li key={todo.id} onClick={() => todoRemoveHandler(todo.id)}>
+            {todo.name}
+          </li>
         ))}
       </ul>
     </React.Fragment>
