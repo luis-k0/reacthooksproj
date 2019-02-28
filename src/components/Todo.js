@@ -1,5 +1,8 @@
-import React, { useEffect, useReducer, useRef } from "react"; // useState removed to test useRef
+import React, { useState, useEffect, useReducer, useRef, useMemo } from "react";
 import axios from "axios";
+
+import List from "./List";
+import { useFormInput } from "../hooks/forms";
 
 const todo = props => {
   // useState returns an array, position 0 is the state, position 1 is the function to update the state
@@ -7,7 +10,9 @@ const todo = props => {
   // const [submittedTodo, setSubmittedTodo] = useState(null);
   // const [todoList, setTodoList] = useState([]); // commented to useReducer
   // const [todoState, setTodoState] = useState({ userInput: "", todoList: [] });
-  const todoInputRef = useRef();
+  const [inputIsValid, setInputIsValid] = useState(false);
+  // const todoInputRef = useRef();
+  const todoInput = useFormInput();
 
   const todoListReducer = (state, action) => {
     switch (action.type) {
@@ -91,7 +96,7 @@ const todo = props => {
 
     // todoInputRef created with useRef
     // current have the referento html element
-    const todoName = todoInputRef.current.value;
+    const todoName = todoInput.value; // const todoName = todoInputRef.current.value;
 
     axios
       .post("https://reacthooks-aec8d.firebaseio.com/todos.json", {
@@ -129,6 +134,14 @@ const todo = props => {
       });
   };
 
+  const inputValidationHandler = event => {
+    if (event.target.value.trim() === "") {
+      setInputIsValid(false);
+    } else {
+      setInputIsValid(true);
+    }
+  };
+
   return (
     <React.Fragment>
       <input
@@ -136,20 +149,21 @@ const todo = props => {
         placeholder="Todo"
         // onChange={inputChangeHandler}
         // value={todoName} //value={todoState.userInput} //
-        ref={todoInputRef}
+        // ref={todoInputRef}
+        onChange={todoInput.onChange} // onChange={inputValidationHandler}
+        value={todoInput.value}
+        style={{ backgroundColor: todoInput.validity ? "transparent" : "red" }} //style={{ backgroundColor: inputIsValid ? "transparent" : "red" }}
       />
       <button type="button" onClick={todoAddHandler}>
         Add
       </button>
-      <ul>
-        {/* {todoState.todoList.map(todo => ( */}
-        {todoList.map(todo => (
-          // <li key={todo.id} onClick={todoRemoveHandler.bind(this, todo.id)}>
-          <li key={todo.id} onClick={() => todoRemoveHandler(todo.id)}>
-            {todo.name}
-          </li>
-        ))}
-      </ul>
+      {/* useMemo verifies if array changes to render the component */}
+      {useMemo(
+        () => (
+          <List items={todoList} onClick={todoRemoveHandler} />
+        ),
+        [todoList]
+      )}
     </React.Fragment>
   );
 };
